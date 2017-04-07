@@ -1,13 +1,36 @@
-var express = require('express');
-var app = express();
+const express = require('express');
+const bodyParser= require('body-parser');
+const app = express();
+const MongoClient = require('mongodb').MongoClient;
 
-app.get('/', function (req, res) {
-   res.send('Hello World');
-})
+var db;
 
-var server = app.listen(8081, function () {
- var host = server.address().address
- var port = server.address().port
- 
- console.log("Example app listening at http://%s:%s", host, port)
+MongoClient.connect('mongodb://localhost/mydb', (err, database) => {
+  if (err) {
+    return console.log(err);
+  }
+
+  db = database;
+  app.listen(3000, () => {
+    console.log('listening on 3000');
+  });
+});
+
+app.use(bodyParser.urlencoded({extended: true}));
+
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+  db.collection('quotes').find().toArray(function(err, results) {
+    console.log(results);
+  })
+});
+
+app.post('/quotes', (req, res) => {
+  db.collection('quotes').save(req.body, (err, result) => {
+    if (err) return console.log(err)
+
+    console.log('saved to database')
+    res.redirect('/')
+  })
 })
